@@ -127,55 +127,56 @@ export default function Game({ gameState, user, roomCode }) {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-slate-100 p-4 gap-4 overflow-hidden">
+        <div className="flex flex-col h-screen bg-[#fffdf5] p-4 gap-4 overflow-hidden font-['Patrick_Hand'] text-xl" style={{backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '20px 20px'}}>
             {/* Header */}
-            <header className="bg-white p-3 rounded-xl shadow-sm flex justify-between items-center shrink-0">
+            <header className="box-sketch p-3 flex justify-between items-center shrink-0 bg-white">
                 <div className="flex items-center gap-4">
-                    <div className="bg-slate-900 text-white px-3 py-1 rounded font-black tracking-widest">
+                    <div className="bg-black text-white px-3 py-1 -rotate-2 rounded-sm font-black tracking-widest text-2xl">
                         RABISCO
                     </div>
-                    <div className="flex items-center gap-2 text-slate-600 font-bold bg-slate-100 px-3 py-1 rounded-lg">
-                        <Timer size={18} />
+                    <div className="flex items-center gap-2 text-slate-700 font-bold bg-yellow-50 border-2 border-black px-3 py-1 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <Timer size={20} />
                         <span className={timeLeft < 10 ? 'text-red-500 animate-pulse' : ''}>
                             {formatTime(timeLeft)}
                         </span>
                     </div>
-                    <div className="text-sm font-bold text-slate-500">
+                    <div className="text-lg font-bold text-slate-600">
                         Rodada {gameState.round}/{gameState.maxRounds}
                     </div>
                 </div>
 
                 {/* Word Display */}
-                <div className="absolute left-1/2 -translate-x-1/2 bg-white px-6 py-2 rounded-b-xl shadow-md border-t-0 border-2 border-slate-200 -mt-3">
+                <div className="absolute left-1/2 -translate-x-1/2 bg-white px-8 py-4 rounded-b-3xl border-2 border-t-0 border-black shadow-[0px_4px_0px_0px_rgba(0,0,0,0.1)] -mt-4 transform rotate-1">
                     {gameState.status === 'DRAWING' ? (
                         isDrawer ? (
                             <div className="flex flex-col items-center">
-                                <span className="font-black text-xl tracking-widest text-slate-900">{displayWord}</span>
+                                <span className="font-black text-2xl tracking-widest text-slate-900">{displayWord}</span>
                                 <button 
                                     onClick={handleGiveHint}
-                                    className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded border border-yellow-200 font-bold hover:bg-yellow-200 mt-1"
+                                    className="text-sm bg-yellow-200 text-black px-3 py-1 mt-1 border-2 border-black rounded-full hover:bg-yellow-300 hover:-rotate-2 transition-transform font-bold"
                                 >
                                     DAR DICA (-2 pts)
                                 </button>
                             </div>
                         ) : (
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                                 {gameState.wordLength > 0 ? (
                                     Array(gameState.wordLength).fill('').map((_, i) => (
-                                        <span key={i} className="w-6 h-8 border-b-4 border-slate-300 flex items-end justify-center font-bold text-slate-400">
+                                        <span key={i} className="w-8 h-10 border-b-4 border-black flex items-end justify-center font-bold text-2xl text-slate-700 font-mono">
                                             {gameState.maskedWord && gameState.maskedWord[i] ? gameState.maskedWord[i] : ''}
                                         </span>
                                     ))
                                 ) : (
-                                    <div className="flex gap-1">
-                                        {/* Hidden word length indicator? Or just ??? */}
-                                        <span className="text-slate-400 font-bold">? ? ?</span>
+                                    <div className="flex gap-2">
+                                        <span className="text-slate-400 font-bold text-2xl animate-bounce">?</span>
+                                        <span className="text-slate-400 font-bold text-2xl animate-bounce delay-100">?</span>
+                                        <span className="text-slate-400 font-bold text-2xl animate-bounce delay-200">?</span>
                                     </div>
                                 )}
                             </div>
                         )
                     ) : (
-                        <span className="font-bold text-slate-400">Aguardando...</span>
+                        <span className="font-bold text-slate-400 text-xl">Aguardando...</span>
                     )}
                 </div>
 
@@ -187,35 +188,36 @@ export default function Game({ gameState, user, roomCode }) {
             {/* Main Content */}
             <div className="flex-1 flex gap-4 min-h-0">
                 {/* Left: Players */}
-                <div className="w-64 bg-white rounded-xl shadow-sm flex flex-col overflow-hidden shrink-0 border border-slate-200">
-                    <div className="p-3 bg-slate-50 border-b border-slate-100 font-bold text-slate-600 text-sm uppercase">
-                        Jogadores
+                <div className="w-64 box-sketch flex flex-col overflow-hidden shrink-0 bg-white transform -rotate-1">
+                    <div className="p-3 bg-yellow-50 border-b-2 border-black font-bold text-slate-800 text-lg uppercase flex items-center justify-between">
+                        <span>Jogadores</span>
+                        <span className="text-xs bg-black text-white px-2 py-0.5 rounded-full">{gameState.players.length}</span>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                        {gameState.players.sort((a,b) => b.score - a.score).map(p => (
-                            <div key={p.id} className={`flex items-center gap-2 p-2 rounded-lg ${p.id === gameState.currentDrawerId ? 'bg-yellow-50 border border-yellow-200' : 'bg-slate-50'}`}>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                        {gameState.players.sort((a,b) => b.score - a.score).map((p, i) => (
+                            <div key={p.id} className={`flex items-center gap-3 p-2 rounded-lg border-2 transition-all ${p.id === gameState.currentDrawerId ? 'bg-yellow-100 border-black translate-x-1' : 'bg-white border-slate-200 hover:border-slate-400'}`}>
                                 <div className="relative">
                                     <img 
                                         src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.avatar}`} 
-                                        className="w-10 h-10 rounded-full bg-white border border-slate-200"
+                                        className="w-10 h-10 rounded-full bg-white border-2 border-black"
                                     />
                                     {p.id === gameState.currentDrawerId && (
-                                        <div className="absolute -top-1 -right-1 bg-yellow-400 text-white p-0.5 rounded-full border-2 border-white">
-                                            <PenTool size={10} />
+                                        <div className="absolute -top-2 -right-2 bg-yellow-400 text-black p-1 rounded-full border-2 border-black z-10">
+                                            <PenTool size={12} />
                                         </div>
                                     )}
                                     {gameState.guessedPlayers && gameState.guessedPlayers.includes(p.id) && (
-                                        <div className="absolute inset-0 bg-green-500/80 rounded-full flex items-center justify-center text-white font-bold text-xs animate-in zoom-in">
+                                        <div className="absolute inset-0 bg-green-500/90 rounded-full flex items-center justify-center text-white font-bold border-2 border-black animate-in zoom-in">
                                             OK
                                         </div>
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-sm truncate text-slate-800 flex items-center gap-1">
-                                        {p.nickname}
-                                        {p.id === gameState.hostId && <Crown size={10} className="text-yellow-500 fill-yellow-500" />}
+                                    <div className="font-bold text-lg truncate text-slate-800 flex items-center gap-1 leading-none">
+                                        {i+1}. {p.nickname}
+                                        {p.id === gameState.hostId && <Crown size={14} className="text-yellow-500 fill-yellow-500" />}
                                     </div>
-                                    <div className="text-xs text-slate-500 font-mono">
+                                    <div className="text-sm text-slate-500 font-bold">
                                         {p.score} pts
                                     </div>
                                 </div>
@@ -225,33 +227,35 @@ export default function Game({ gameState, user, roomCode }) {
                 </div>
 
                 {/* Center: Canvas */}
-                <div className="flex-1 relative bg-white rounded-xl shadow-sm overflow-hidden border-4 border-slate-800">
+                <div className="flex-1 relative box-sketch overflow-hidden bg-white p-2">
+                    <div className="w-full h-full border-2 border-slate-100 rounded-lg overflow-hidden relative">
                     {gameState.status === 'CHOOSING_WORD' && isDrawer ? (
-                         <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                             <div className="bg-white p-8 rounded-2xl shadow-2xl text-center animate-in zoom-in">
-                                 <h2 className="text-2xl font-black text-slate-900 mb-6">Escolha uma palavra</h2>
-                                 <div className="flex gap-4">
+                         <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center">
+                             <div className="bg-white p-8 border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-2xl text-center max-w-2xl w-full rotate-1">
+                                 <h2 className="text-3xl font-black text-black mb-8 uppercase tracking-widest transform -rotate-2">Escolha uma palavra</h2>
+                                 <div className="grid grid-cols-3 gap-4">
                                      {user.drawerData?.options?.map((opt, i) => (
                                          <button 
                                             key={i}
                                             onClick={() => handleChooseWord(opt)}
-                                            className="px-6 py-4 bg-slate-100 hover:bg-yellow-400 hover:text-black hover:scale-105 transition-all rounded-xl font-bold text-lg text-slate-700 border-2 border-slate-200 hover:border-black shadow-sm"
+                                            className="group relative h-32 bg-white border-4 border-black rounded-xl hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                                          >
-                                             <div className="text-xs uppercase tracking-widest opacity-50 mb-1">{opt.difficulty}</div>
-                                             {opt.text}
+                                             <div className={`absolute inset-0 opacity-10 ${i===0 ? 'bg-green-500' : i===1 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                                             <div className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">{opt.difficulty}</div>
+                                             <div className="text-2xl font-black text-black group-hover:scale-110 transition-transform">{opt.text}</div>
                                          </button>
                                      ))}
                                  </div>
                              </div>
                          </div>
                     ) : gameState.status === 'CHOOSING_WORD' ? (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-50">
-                            <div className="text-center animate-pulse">
-                                <p className="text-2xl font-bold text-slate-400 mb-2">O desenhista está escolhendo...</p>
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm">
+                            <div className="text-center animate-pulse bg-white p-6 border-4 border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <p className="text-2xl font-bold text-black mb-2">O desenhista está escolhendo...</p>
                                 <div className="flex gap-2 justify-center">
-                                    <div className="w-3 h-3 bg-slate-300 rounded-full animate-bounce"></div>
-                                    <div className="w-3 h-3 bg-slate-300 rounded-full animate-bounce delay-100"></div>
-                                    <div className="w-3 h-3 bg-slate-300 rounded-full animate-bounce delay-200"></div>
+                                    <div className="w-4 h-4 bg-black rounded-full animate-bounce"></div>
+                                    <div className="w-4 h-4 bg-black rounded-full animate-bounce delay-100"></div>
+                                    <div className="w-4 h-4 bg-black rounded-full animate-bounce delay-200"></div>
                                 </div>
                             </div>
                         </div>
@@ -259,9 +263,9 @@ export default function Game({ gameState, user, roomCode }) {
 
                     {gameState.status === 'ROUND_END' && (
                         <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center text-white">
-                            <div className="text-center">
-                                <p className="text-xl font-bold text-slate-300 mb-2">A palavra era</p>
-                                <h2 className="text-5xl font-black text-yellow-400 mb-8">{gameState.currentWord}</h2>
+                            <div className="text-center transform rotate-2">
+                                <p className="text-2xl font-bold text-slate-300 mb-2 font-hand">A palavra era</p>
+                                <h2 className="text-6xl font-black text-yellow-400 mb-8 border-4 border-white p-4 rounded-xl -rotate-2 inline-block bg-black">{gameState.currentWord}</h2>
                                 
                                 {/* Winner of round? Or just scores */}
                             </div>
@@ -276,28 +280,34 @@ export default function Game({ gameState, user, roomCode }) {
                         sabotagesActive={gameState.sabotagesActive || {}}
                         myId={user.uid}
                     />
+                    </div>
                 </div>
 
                 {/* Right: Chat & Store */}
-                <div className="w-80 flex flex-col gap-4 shrink-0">
-                    <div className="flex-1 min-h-0">
-                        <Chat 
-                            messages={messages} 
-                            onSendMessage={handleSendMessage}
-                            isDrawer={isDrawer}
-                            guessed={gameState.guessedPlayers && gameState.guessedPlayers.includes(user.uid)}
-                        />
+                <div className="w-80 flex flex-col gap-4 shrink-0 h-full">
+                    <div className="flex-1 min-h-0 box-sketch overflow-hidden bg-white flex flex-col transform rotate-1 transition-all duration-300">
+                        <div className="p-2 bg-slate-100 border-b-2 border-black font-bold text-center">Chat</div>
+                        <div className="flex-1 min-h-0 relative">
+                            <Chat 
+                                messages={messages} 
+                                onSendMessage={handleSendMessage}
+                                isDrawer={isDrawer}
+                                guessed={gameState.guessedPlayers && gameState.guessedPlayers.includes(user.uid)}
+                            />
+                        </div>
                     </div>
                     
-                    <SabotageStore 
-                        coins={myPlayer.coins || 0}
-                        inventory={myPlayer.inventory || []}
-                        onBuy={handleBuySabotage}
-                        onUse={handleUseSabotage}
-                        isDrawer={isDrawer}
-                        players={gameState.players}
-                        myId={user.uid}
-                    />
+                    <div className="box-sketch bg-white p-2 transform -rotate-1 transition-all duration-300">
+                        <SabotageStore 
+                            coins={myPlayer.coins || 0}
+                            inventory={myPlayer.inventory || []}
+                            onBuy={handleBuySabotage}
+                            onUse={handleUseSabotage}
+                            isDrawer={isDrawer}
+                            players={gameState.players}
+                            myId={user.uid}
+                        />
+                    </div>
                 </div>
             </div>
         </div>

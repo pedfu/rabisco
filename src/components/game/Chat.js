@@ -17,13 +17,12 @@ export default function Chat({ messages, onSendMessage, isDrawer, guessed }) {
 
     return (
         <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-3 border-b border-slate-100 bg-slate-50 font-bold text-slate-700 text-sm">
-                Chat da Sala
-            </div>
-            
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {messages.map((msg) => (
-                    <div key={msg.id} className={`text-sm ${msg.type === 'system-near' ? 'text-yellow-600 bg-yellow-50 p-1 rounded text-center font-bold' : ''}`}>
+                    <div key={msg.id} className={`text-sm ${
+                        msg.type === 'system-near' ? 'text-yellow-600 bg-yellow-50 p-1 rounded text-center font-bold border-2 border-yellow-100' : 
+                        msg.type === 'system-error' ? 'text-red-600 bg-red-50 p-1 rounded text-center font-bold border-2 border-red-100' : ''
+                    }`}>
                         {msg.type === 'user' && (
                              <p>
                                  <span className="font-bold text-slate-900">{msg.author}: </span>
@@ -34,6 +33,12 @@ export default function Chat({ messages, onSendMessage, isDrawer, guessed }) {
                         )}
                         {msg.type === 'system' && (
                              <p className="text-center text-slate-400 text-xs italic">{msg.text}</p>
+                        )}
+                        {msg.type === 'system-near' && (
+                             <p>{msg.text}</p>
+                        )}
+                        {msg.type === 'system-error' && (
+                             <p>{msg.text}</p>
                         )}
                         {msg.type === 'system-win' && (
                              <p className="text-center text-green-600 font-bold bg-green-50 p-1 rounded">{msg.text}</p>

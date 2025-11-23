@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  @font-face {
+    font-family: 'Patrick Hand';
+    src: url('https://fonts.gstatic.com/s/patrickhand/v20/LDI1apMD5E3kBGC4viyl_07D.woff2') format('woff2');
+  }
+
+  body {
+    font-family: 'Patrick Hand', cursive;
+  }
+}
+
+@layer components {
+  .btn-sketch {
+    @apply relative border-2 border-black bg-white transition-transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)];
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  }
+  
+  .box-sketch {
+    @apply border-2 border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)];
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  }
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
