@@ -68,16 +68,11 @@ export default function Canvas({
         if (!isDrawing || !isDrawer) return;
         setIsDrawing(false);
         
-        // For shapes, we only need start and end points really, but currentPoints has path.
-        // We can simplify for storage if needed, but keeping all points allows replay if we wanted.
-        // Actually for shapes we just need first and last point.
-        
         if (currentPoints.length > 0) {
             let finalPoints = currentPoints;
             let strokeType = tool;
             
             if (tool === 'rect' || tool === 'circle') {
-                // Optimize: just keep start and end
                 finalPoints = [currentPoints[0], currentPoints[currentPoints.length - 1]];
             }
 
@@ -93,6 +88,36 @@ export default function Canvas({
         }
         setCurrentPoints([]);
     };
+
+    // Undo functionality
+    const handleUndo = () => {
+        if (!isDrawer) return;
+        // Logic: strokes array is managed by parent (Game.js) via socket updates.
+        // We need to tell the server to remove the last stroke made by this user (or just last stroke in list).
+        // Since we don't have local state of strokes to pop easily without sync issues, 
+        // we emit an 'undo_stroke' event.
+        // BUT wait, `onDrawStroke(null, 'undo')` was a placeholder.
+        // Let's change the props to accept an onUndo function or use a specific emit.
+        // For now, let's emit a custom event or check if onDrawStroke handles it.
+        // The previous placeholder was: onDrawStroke(null, 'undo'); 
+        // Let's implement that in Game.js later.
+        onDrawStroke(null, 'undo'); 
+    };
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        if (!isDrawer) return;
+
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                handleUndo();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isDrawer]); // Removed `strokes` dependency to avoid re-binding on every stroke
 
     const [now, setNow] = useState(Date.now());
     useEffect(() => {

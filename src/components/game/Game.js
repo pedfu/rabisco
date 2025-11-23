@@ -42,6 +42,10 @@ export default function Game({ gameState, user, roomCode }) {
             setLocalStrokes([]);
         };
 
+        const handleUndoStroke = () => {
+            setLocalStrokes(prev => prev.slice(0, -1));
+        };
+        
         // Sabotage Events
         const handleSabotageTrigger = ({ type, sourceName }) => {
             // Optional: Show toast/notification
@@ -59,6 +63,7 @@ export default function Game({ gameState, user, roomCode }) {
         socket.on('new_stroke', handleNewStroke);
         socket.on('chat_message', handleChatMessage);
         socket.on('canvas_cleared', handleClear);
+        socket.on('stroke_undone', handleUndoStroke);
         socket.on('sabotage_triggered', handleSabotageTrigger);
         socket.on('timer_pulse', handleTimerPulse);
 
@@ -66,12 +71,17 @@ export default function Game({ gameState, user, roomCode }) {
             socket.off('new_stroke', handleNewStroke);
             socket.off('chat_message', handleChatMessage);
             socket.off('canvas_cleared', handleClear);
+            socket.off('stroke_undone', handleUndoStroke);
             socket.off('sabotage_triggered', handleSabotageTrigger);
             socket.off('timer_pulse', handleTimerPulse);
         };
     }, []);
 
-    const handleDrawStroke = (stroke) => {
+    const handleDrawStroke = (stroke, type) => {
+        if (type === 'undo') {
+            socket.emit('undo_stroke', { roomCode });
+            return;
+        }
         setLocalStrokes(prev => [...prev, stroke]);
         socket.emit('draw_stroke', { roomCode, stroke });
     };
