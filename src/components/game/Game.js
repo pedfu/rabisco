@@ -9,6 +9,7 @@ export default function Game({ gameState, user, roomCode }) {
     const [localStrokes, setLocalStrokes] = useState([]);
     const [messages, setMessages] = useState([]);
     const [timeLeft, setTimeLeft] = useState(gameState.timeLeft || 0);
+    const [notification, setNotification] = useState(null);
     
     const myPlayer = gameState.players.find(p => p.id === user.uid) || {};
     const isDrawer = gameState.currentDrawerId === user.uid;
@@ -36,6 +37,10 @@ export default function Game({ gameState, user, roomCode }) {
         
         const handleChatMessage = (msg) => {
             setMessages(prev => [...prev, msg]);
+            if (msg.type === 'system-error') {
+                setNotification(msg.text);
+                setTimeout(() => setNotification(null), 4000);
+            }
         };
         
         const handleClear = () => {
@@ -138,6 +143,16 @@ export default function Game({ gameState, user, roomCode }) {
 
     return (
         <div className="flex flex-col h-screen bg-[#fffdf5] p-4 gap-4 overflow-hidden font-['Patrick_Hand'] text-xl" style={{backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '20px 20px'}}>
+            {notification && (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] animate-bounce pointer-events-none">
+                    <div className="bg-red-500 text-white px-8 py-6 rounded-2xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rotate-3 transform transition-all">
+                        <h2 className="text-3xl font-black uppercase tracking-widest text-center leading-tight drop-shadow-md">
+                            {notification}
+                        </h2>
+                        <div className="absolute -top-4 -right-4 text-4xl">😴</div>
+                    </div>
+                </div>
+            )}
             {/* Header */}
             <header className="box-sketch p-3 flex justify-between items-center shrink-0 bg-white">
                 <div className="flex items-center gap-4">

@@ -1,5 +1,107 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { Eraser, Square, Circle, PaintBucket } from 'lucide-react';
+
+// Helper: Hex to RGB
+const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+        a: 255
+    } : { r: 0, g: 0, b: 0, a: 255 };
+};
+
+// Flood Fill Algorithm (Stack-based scanline for performance)
+const floodFill = (ctx, startX, startY, fillColor) => {
+    const canvas = ctx.canvas;
+    const w = canvas.width;
+    const h = canvas.height;
+    
+    // Bounds check
+    if(startX < 0 || startY < 0 || startX >= w || startY >= h) return;
+
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+    
+    const targetColor = hexToRgb(fillColor);
+    
+    // Get start color
+    const startPos = (startY * w + startX) * 4;
+    const startR = data[startPos];
+    const startG = data[startPos+1];
+    const startB = data[startPos+2];
+    const startA = data[startPos+3];
+    
+    // If color is already same, return
+    if (startR === targetColor.r && startG === targetColor.g && 
+        startB === targetColor.b && startA === targetColor.a) return;
+
+    // Match function
+    const matches = (pos) => {
+        return data[pos] === startR && 
+               data[pos+1] === startG && 
+               data[pos+2] === startB && 
+               data[pos+3] === startA;
+    };
+    
+    const colorPixel = (pos) => {
+        data[pos] = targetColor.r;
+        data[pos+1] = targetColor.g;
+        data[pos+2] = targetColor.b;
+        data[pos+3] = targetColor.a;
+    };
+
+    const stack = [[startX, startY]];
+    
+    while (stack.length) {
+        const [x, y] = stack.pop();
+        let pixelPos = (y * w + x) * 4;
+        
+        // Move up to find top boundary
+        let y1 = y;
+        while (y1 >= 0 && matches(pixelPos)) {
+            y1--;
+            pixelPos -= w * 4;
+        }
+        y1++;
+        pixelPos += w * 4; // Step back to valid pixel
+        
+        let spanLeft = false;
+        let spanRight = false;
+        
+        while (y1 < h && matches(pixelPos)) {
+            colorPixel(pixelPos);
+            
+            if (x > 0) {
+                if (matches(pixelPos - 4)) {
+                    if (!spanLeft) {
+                        stack.push([x - 1, y1]);
+                        spanLeft = true;
+                    }
+                } else if (spanLeft) {
+                    spanLeft = false;
+                }
+            }
+            
+            if (x < w - 1) {
+                if (matches(pixelPos + 4)) {
+                    if (!spanRight) {
+                        stack.push([x + 1, y1]);
+                        spanRight = true;
+                    }
+                } else if (spanRight) {
+                    spanRight = false;
+                }
+            }
+            
+            y1++;
+            pixelPos += w * 4;
+        }
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+};
 
 export default function Canvas({ 
     isDrawer, 
@@ -14,7 +116,8 @@ export default function Canvas({
     const [currentPoints, setCurrentPoints] = useState([]);
     const [color, setColor] = useState('#000000');
     const [width, setWidth] = useState(3);
-    const [tool, setTool] = useState('pen'); // pen, eraser, rect, circle
+    const [tool, setTool] = useState('pen'); // pen, eraser, rect, circle, fill
+    const [now, setNow] = useState(Date.now());
 
     // Sabotage Effects
     const isEarthquake = Object.values(sabotagesActive).some(s => s.type === 'earthquake' && s.targetId === myId);
@@ -22,6 +125,12 @@ export default function Canvas({
     const shouldMirror = !isDrawer && Object.values(sabotagesActive).some(s => s.type === 'mirror');
     const isCensored = Object.values(sabotagesActive).some(s => s.type === 'censorship');
     const isInvisibleInk = Object.values(sabotagesActive).some(s => s.type === 'invisible_ink' && s.targetId === myId);
+
+    // Refresh for invisible ink reveal
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const getCoords = (e) => {
         const canvas = canvasRef.current;
@@ -49,11 +158,115 @@ export default function Canvas({
         return { x, y };
     };
 
+    const drawStroke = (ctx, stroke) => {
+        const { points, color, width, type, x, y } = stroke;
+        
+        if (type === 'fill') {
+            floodFill(ctx, Math.floor(x), Math.floor(y), color);
+            return;
+        }
+
+        if (!points || points.length === 0) return;
+
+        ctx.beginPath();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+
+        if (type === 'pen' || type === 'eraser') {
+            if (points.length === 1) {
+                // Dot
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(points[0].x, points[0].y, width / 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.stroke();
+            }
+        } else if (type === 'rect') {
+            const start = points[0];
+            const end = points[points.length - 1];
+            const w = end.x - start.x;
+            const h = end.y - start.y;
+            ctx.strokeRect(start.x, start.y, w, h);
+        } else if (type === 'circle') {
+            const start = points[0];
+            const end = points[points.length - 1];
+            const r = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+            ctx.beginPath();
+            ctx.arc(start.x, start.y, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    };
+
+    // Main Draw Loop
+    useLayoutEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // Clear
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Background White
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw saved strokes
+        strokes.forEach(stroke => {
+            // Check visibility (Invisible Ink)
+            if (stroke.invisible && now < stroke.createdAt + 3000) {
+                return;
+            }
+            drawStroke(ctx, stroke);
+        });
+
+        // Draw preview
+        if (currentPoints.length > 0) {
+            const previewStroke = {
+                points: currentPoints,
+                color: tool === 'eraser' ? '#ffffff' : color,
+                width: tool === 'eraser' ? width * 2 : width,
+                type: tool
+            };
+            
+            // For preview, we might want opacity or different style, but direct draw is fine
+            // Save context to apply opacity only to preview if desired
+            ctx.save();
+            if (tool !== 'eraser') ctx.globalAlpha = 0.6;
+            drawStroke(ctx, previewStroke);
+            ctx.restore();
+        }
+
+    }, [strokes, currentPoints, now]); // Re-render when these change
+
     const startDrawing = (e) => {
         if (!isDrawer) return;
         e.preventDefault();
-        setIsDrawing(true);
+        
         const point = getCoords(e);
+        
+        if (tool === 'fill') {
+            // Instant action
+            const stroke = {
+                type: 'fill',
+                x: point.x,
+                y: point.y,
+                color: color,
+                createdAt: Date.now(),
+                invisible: isInvisibleInk
+            };
+            onDrawStroke(stroke);
+            return;
+        }
+
+        setIsDrawing(true);
         setCurrentPoints([point]);
     };
 
@@ -89,102 +302,18 @@ export default function Canvas({
         setCurrentPoints([]);
     };
 
-    // Undo functionality
-    const handleUndo = () => {
-        if (!isDrawer) return;
-        // Logic: strokes array is managed by parent (Game.js) via socket updates.
-        // We need to tell the server to remove the last stroke made by this user (or just last stroke in list).
-        // Since we don't have local state of strokes to pop easily without sync issues, 
-        // we emit an 'undo_stroke' event.
-        // BUT wait, `onDrawStroke(null, 'undo')` was a placeholder.
-        // Let's change the props to accept an onUndo function or use a specific emit.
-        // For now, let's emit a custom event or check if onDrawStroke handles it.
-        // The previous placeholder was: onDrawStroke(null, 'undo'); 
-        // Let's implement that in Game.js later.
-        onDrawStroke(null, 'undo'); 
-    };
-
-    // Keyboard shortcuts
+    // Key handlers
     useEffect(() => {
         if (!isDrawer) return;
-
         const handleKeyDown = (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
                 e.preventDefault();
-                handleUndo();
+                onDrawStroke(null, 'undo');
             }
         };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isDrawer]); // Removed `strokes` dependency to avoid re-binding on every stroke
-
-    const [now, setNow] = useState(Date.now());
-    useEffect(() => {
-        const interval = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const visibleStrokes = strokes.filter(s => {
-        if (s.invisible) {
-            return now > s.createdAt + 3000;
-        }
-        return true;
-    });
-
-    const renderStroke = (stroke, idx) => {
-        const type = stroke.type || 'pen';
-        const points = stroke.points;
-        if (points.length === 0) return null;
-
-        const strokeColor = stroke.color;
-        const strokeWidth = stroke.width;
-
-        if (type === 'pen' || type === 'eraser') {
-            const d = points.map((p, i) => `${i===0?'M':'L'} ${p.x} ${p.y}`).join(' ');
-            return <path key={idx} d={d} stroke={strokeColor} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeLinejoin="round" />;
-        } else if (type === 'rect') {
-            const start = points[0];
-            const end = points[points.length - 1];
-            const x = Math.min(start.x, end.x);
-            const y = Math.min(start.y, end.y);
-            const w = Math.abs(end.x - start.x);
-            const h = Math.abs(end.y - start.y);
-            return <rect key={idx} x={x} y={y} width={w} height={h} stroke={strokeColor} strokeWidth={strokeWidth} fill="none" />;
-        } else if (type === 'circle') {
-            const start = points[0];
-            const end = points[points.length - 1];
-            const r = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-            return <circle key={idx} cx={start.x} cy={start.y} r={r} stroke={strokeColor} strokeWidth={strokeWidth} fill="none" />;
-        }
-        return null;
-    };
-
-    const renderPreview = () => {
-        if (currentPoints.length === 0) return null;
-        
-        const strokeColor = tool === 'eraser' ? '#ffffff' : color; // White for eraser preview
-        // Add outline for eraser if white on white?
-        const strokeWidth = tool === 'eraser' ? width * 2 : width;
-        
-        if (tool === 'pen' || tool === 'eraser') {
-             const d = currentPoints.map((p, i) => `${i===0?'M':'L'} ${p.x} ${p.y}`).join(' ');
-             return <path d={d} stroke={strokeColor} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />;
-        } else if (tool === 'rect') {
-            const start = currentPoints[0];
-            const end = currentPoints[currentPoints.length - 1];
-            const x = Math.min(start.x, end.x);
-            const y = Math.min(start.y, end.y);
-            const w = Math.abs(end.x - start.x);
-            const h = Math.abs(end.y - start.y);
-            return <rect x={x} y={y} width={w} height={h} stroke={strokeColor} strokeWidth={strokeWidth} fill="none" opacity="0.6" />;
-        } else if (tool === 'circle') {
-            const start = currentPoints[0];
-            const end = currentPoints[currentPoints.length - 1];
-            const r = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-            return <circle cx={start.x} cy={start.y} r={r} stroke={strokeColor} strokeWidth={strokeWidth} fill="none" opacity="0.6" />;
-        }
-    };
+    }, [isDrawer, onDrawStroke]);
 
     const PALETTE = [
         '#000000', '#ffffff', '#7f7f7f', '#c3c3c3', 
@@ -196,7 +325,7 @@ export default function Canvas({
 
     return (
         <div className={`relative w-full h-full bg-white rounded-xl shadow-inner overflow-hidden border-4 border-slate-800 cursor-crosshair touch-none ${isEarthquake ? 'animate-shake' : ''}`}>
-            <style>{`
+             <style>{`
                 @keyframes shake {
                     0% { transform: translate(1px, 1px) rotate(0deg); }
                     20% { transform: translate(-3px, 0px) rotate(1deg); }
@@ -209,12 +338,16 @@ export default function Canvas({
             `}</style>
 
             <div className="absolute inset-0" style={{ transform: shouldMirror ? 'scaleX(-1)' : 'none' }}>
-                <svg className="w-full h-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
-                    {/* Background White */}
-                    <rect x="0" y="0" width="800" height="600" fill="white" />
-                    {visibleStrokes.map((s, i) => renderStroke(s, i))}
-                    {isDrawing && renderPreview()}
-                </svg>
+                <canvas
+                    ref={canvasRef}
+                    width={800}
+                    height={600}
+                    className="w-full h-full"
+                    onPointerDown={startDrawing}
+                    onPointerMove={draw}
+                    onPointerUp={stopDrawing}
+                    onPointerLeave={stopDrawing}
+                />
             </div>
 
             {isCensored && (
@@ -222,17 +355,6 @@ export default function Canvas({
                     CENSURADO
                 </div>
             )}
-
-            <canvas
-                ref={canvasRef}
-                width={800}
-                height={600}
-                className="absolute inset-0 w-full h-full z-30 opacity-0"
-                onPointerDown={startDrawing}
-                onPointerMove={draw}
-                onPointerUp={stopDrawing}
-                onPointerLeave={stopDrawing}
-            />
 
             {isDrawer && (
                 <div className="absolute bottom-2 left-2 z-40 bg-slate-100 p-2 rounded-xl shadow-lg border border-slate-300 flex flex-col gap-2 w-64">
@@ -243,6 +365,9 @@ export default function Canvas({
                         </button>
                         <button onClick={() => setTool('eraser')} className={`p-1 rounded ${tool === 'eraser' ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-50'}`} title="Borracha">
                             <Eraser size={16} />
+                        </button>
+                        <button onClick={() => setTool('fill')} className={`p-1 rounded ${tool === 'fill' ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-50'}`} title="Balde de Tinta">
+                            <PaintBucket size={16} />
                         </button>
                         <button onClick={() => setTool('rect')} className={`p-1 rounded ${tool === 'rect' ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-50'}`} title="Quadrado">
                             <Square size={16} />
@@ -277,7 +402,7 @@ export default function Canvas({
                                 key={c}
                                 className={`w-5 h-5 rounded border ${color === c ? 'border-black scale-110 shadow-sm z-10' : 'border-slate-300'}`}
                                 style={{ backgroundColor: c }}
-                                onClick={() => { setColor(c); setTool('pen'); }}
+                                onClick={() => { setColor(c); if(tool === 'eraser') setTool('pen'); }}
                             />
                         ))}
                     </div>
