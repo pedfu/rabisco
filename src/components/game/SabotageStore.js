@@ -60,21 +60,21 @@ export default function SabotageStore({ coins, inventory, onBuy, onUse, isDrawer
                                     key={item.id}
                                     disabled={coins < item.price}
                                     onClick={() => onBuy(item.id)}
-                                    className={`w-full flex items-center justify-between p-1.5 rounded border transition-all
+                                    className={`w-full flex items-center justify-between p-2 lg:p-1.5 rounded border transition-all
                                         ${coins >= item.price 
                                             ? 'bg-slate-800 border-slate-600 hover:bg-slate-700 hover:border-yellow-500 cursor-pointer' 
                                             : 'bg-slate-900 border-slate-800 opacity-50 cursor-not-allowed'}`}
                                 >
                                     <div className="flex items-center gap-2">
                                         <div className="p-1 bg-slate-900 rounded-lg text-slate-400">
-                                            <item.icon size={12} />
+                                            <item.icon size={16} className="lg:w-3 lg:h-3" />
                                         </div>
                                         <div className="text-left">
-                                            <div className="text-xs font-bold text-slate-200">{item.name}</div>
-                                            <div className="text-[9px] text-slate-500 hidden sm:block">{item.desc}</div>
+                                            <div className="text-sm lg:text-xs font-bold text-slate-200">{item.name}</div>
+                                            <div className="text-xs lg:text-[9px] text-slate-500 block">{item.desc}</div>
                                         </div>
                                     </div>
-                                    <span className={`font-mono font-bold text-xs ${coins >= item.price ? 'text-yellow-400' : 'text-slate-600'}`}>
+                                    <span className={`font-mono font-bold text-sm lg:text-xs ${coins >= item.price ? 'text-yellow-400' : 'text-slate-600'}`}>
                                         ${item.price}
                                     </span>
                                 </button>

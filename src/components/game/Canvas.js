@@ -357,9 +357,9 @@ export default function Canvas({
             )}
 
             {isDrawer && (
-                <div className="absolute bottom-2 left-2 z-40 bg-slate-100 p-2 rounded-xl shadow-lg border border-slate-300 flex flex-col gap-2 w-64">
+                <div className="absolute bottom-0 left-0 right-0 lg:bottom-2 lg:left-2 lg:right-auto lg:w-64 z-40 bg-slate-100 p-2 lg:rounded-xl rounded-t-xl shadow-lg border-t lg:border border-slate-300 flex flex-row lg:flex-col gap-2 overflow-x-auto items-center lg:items-stretch h-16 lg:h-auto no-scrollbar">
                     {/* Tools */}
-                    <div className="flex justify-between gap-1 bg-white p-1 rounded-lg border border-slate-200">
+                    <div className="flex shrink-0 justify-between gap-1 bg-white p-1 rounded-lg border border-slate-200">
                         <button onClick={() => setTool('pen')} className={`p-1 rounded ${tool === 'pen' ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-50'}`} title="Pincel">
                             <div className="w-4 h-4 bg-current rounded-full" />
                         </button>
@@ -382,7 +382,7 @@ export default function Canvas({
                     </div>
 
                     {/* Thickness */}
-                    <div className="flex items-center gap-2 px-1">
+                    <div className="flex shrink-0 items-center gap-2 px-1 w-24 lg:w-auto">
                         <div className="w-2 h-2 rounded-full bg-slate-400" />
                         <input 
                             type="range" 
@@ -396,11 +396,11 @@ export default function Canvas({
                     </div>
 
                     {/* Colors */}
-                    <div className="grid grid-cols-10 gap-1">
+                    <div className="flex lg:grid lg:grid-cols-10 gap-1 overflow-x-auto lg:overflow-visible min-w-0 px-1">
                         {PALETTE.map(c => (
                             <button
                                 key={c}
-                                className={`w-5 h-5 rounded border ${color === c ? 'border-black scale-110 shadow-sm z-10' : 'border-slate-300'}`}
+                                className={`w-6 h-6 lg:w-5 lg:h-5 rounded border shrink-0 ${color === c ? 'border-black scale-110 shadow-sm z-10' : 'border-slate-300'}`}
                                 style={{ backgroundColor: c }}
                                 onClick={() => { setColor(c); if(tool === 'eraser') setTool('pen'); }}
                             />
