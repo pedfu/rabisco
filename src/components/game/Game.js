@@ -143,6 +143,10 @@ export default function Game({ gameState, user, roomCode }) {
         }
     };
 
+    const handlePlayAgain = () => {
+        socket.emit('play_again', { roomCode });
+    };
+
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -358,6 +362,62 @@ export default function Game({ gameState, user, roomCode }) {
                                 <div className="text-center transform rotate-2 px-4">
                                     <p className="text-xl lg:text-2xl font-bold text-slate-300 mb-2 font-hand">A palavra era</p>
                                     <h2 className="text-4xl lg:text-6xl font-black text-yellow-400 mb-8 border-4 border-white p-4 rounded-xl -rotate-2 inline-block bg-black">{gameState.currentWord}</h2>
+                                </div>
+                            </div>
+                        )}
+
+                        {gameState.status === 'GAME_END' && (
+                            <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center text-white animate-in fade-in duration-500">
+                                <div className="text-center w-full max-w-md px-4">
+                                    <h2 className="text-3xl lg:text-5xl font-black text-yellow-400 mb-8 uppercase tracking-widest transform -rotate-2 drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]">Fim de Jogo!</h2>
+                                    
+                                    <div className="space-y-3 lg:space-y-4">
+                                        {gameState.players
+                                            .sort((a, b) => b.score - a.score)
+                                            .slice(0, 3)
+                                            .map((p, i) => (
+                                                <div key={p.id} className={`flex items-center gap-3 lg:gap-4 p-3 lg:p-4 rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transform transition-all ${
+                                                    i === 0 ? 'bg-yellow-400 text-black scale-105 z-10 rotate-1' : 
+                                                    i === 1 ? 'bg-slate-300 text-black -rotate-1 opacity-90' : 
+                                                    'bg-orange-300 text-black rotate-1 opacity-90'
+                                                }`}>
+                                                    <div className="font-black text-2xl lg:text-4xl w-8 lg:w-12 text-right">{i+1}º</div>
+                                                    <img 
+                                                        src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.avatar}`} 
+                                                        className="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-white border-2 border-black"
+                                                        alt={p.nickname}
+                                                    />
+                                                    <div className="flex-1 text-left min-w-0">
+                                                        <div className="font-bold text-lg lg:text-xl truncate">{p.nickname}</div>
+                                                        <div className="text-xs lg:text-sm font-black opacity-70">{p.score} pontos</div>
+                                                    </div>
+                                                    {i === 0 && <Crown size={24} className="text-black lg:w-8 lg:h-8" />}
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 w-full max-w-xs mx-auto mt-8">
+                                        {user.uid === gameState.hostId ? (
+                                            <button 
+                                                onClick={handlePlayAgain}
+                                                className="bg-green-500 text-white px-6 py-3 rounded-full font-bold text-lg border-4 border-black hover:bg-green-400 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all"
+                                            >
+                                                Nova Partida
+                                            </button>
+                                        ) : (
+                                            <p className="text-white font-bold text-lg animate-pulse mb-2">
+                                                Aguardando host iniciar nova partida...
+                                            </p>
+                                        )}
+                                        
+                                        <button 
+                                            onClick={() => window.location.reload()}
+                                            className="bg-white text-black px-6 py-3 rounded-full font-bold text-lg border-4 border-black hover:bg-slate-100 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all"
+                                        >
+                                            Voltar ao Menu
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
